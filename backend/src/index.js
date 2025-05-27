@@ -40,7 +40,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 
 // Rota de mensagens
-app.use("/api/message", messageRoutes);
+app.use("/api/messages", messageRoutes);
 
 app.listen(PORTA, () => {
   console.log("Servidor rodando na PORTA: " + PORTA);

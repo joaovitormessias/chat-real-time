@@ -14,6 +14,8 @@ export const useAuthStore = create((set) => ({
   // Verificar se o usuário está autenticado ou não
   isCheckingAuth: true,
 
+  onlineUsers: [],
+
   checkAuth: async () => {
     // Enviar uma solicitação ao endpoint
     try {
