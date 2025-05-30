@@ -64,6 +64,9 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", (newMessage) => {
+      // Erro: quando eu enviava mensagem através de outro usuário estava aparecendo a mensagem na conversa com outro usuário
+      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
+      if(isMessageSentFromSelectedUser) return;
       set({
         messages: [...get().messages, newMessage],
       });
