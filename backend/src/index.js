@@ -8,10 +8,12 @@ import cookieParser from "cookie-parser";
 // Rotas 'URLS' do meu sistema
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
-import { app, server } from "./lib/socket.js"
+import { app, server } from "./lib/socket.js";
 
 // Comunicação entre o front e back
 import cors from "cors";
+
+import path from "path";
 
 // Arquivo de conexão do banco de dados
 import { connectDB } from "./lib/db.js";
@@ -19,8 +21,9 @@ import { connectDB } from "./lib/db.js";
 // Acessa dados sensíveis do meu arquivo .env
 dotenv.config();
 
-
 const PORTA = process.env.PORTA;
+
+const __dirname = path.resolve();
 
 // Permite extrair dados do arquivo JSON
 app.use(express.json());
@@ -40,6 +43,16 @@ app.use("/api/auth", authRoutes);
 
 // Rota de mensagens
 app.use("/api/messages", messageRoutes);
+
+
+// Verifica se está em produção
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../fronted", "dist", "index.html"));
+  });
+}
 
 server.listen(PORTA, () => {
   console.log("Servidor rodando na PORTA: " + PORTA);
