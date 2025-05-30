@@ -14,7 +14,7 @@ import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/useThemeStore";
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
 
   // Definindo cor do tema de fundo
   const { theme } = useThemeStore();

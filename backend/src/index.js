@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 // Rotas 'URLS' do meu sistema
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import { app, server } from "./lib/socket.js"
 
 // Comunicação entre o front e back
 import cors from "cors";
@@ -18,8 +19,6 @@ import { connectDB } from "./lib/db.js";
 // Acessa dados sensíveis do meu arquivo .env
 dotenv.config();
 
-// Instanciando biblioteca
-const app = express();
 
 const PORTA = process.env.PORTA;
 
@@ -42,7 +41,7 @@ app.use("/api/auth", authRoutes);
 // Rota de mensagens
 app.use("/api/messages", messageRoutes);
 
-app.listen(PORTA, () => {
+server.listen(PORTA, () => {
   console.log("Servidor rodando na PORTA: " + PORTA);
   connectDB();
 });
