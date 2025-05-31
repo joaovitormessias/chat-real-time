@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useEffect, useRef } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
@@ -14,23 +14,23 @@ const ChatContainer = () => {
     isMessagesLoading,
     selectedUser,
     subscribeToMessages,
-    unsubcribeFromMessages,
+    unsubscribeFromMessages,
   } = useChatStore();
   const { authUser } = useAuthStore();
 
-  const messageEndRef = useRef(null);
+  const messageEndRef  = useRef(null);
   // Hook para mensagem entre nós e o usuário selecionado
   useEffect(() => {
     getMessages(selectedUser._id);
 
     subscribeToMessages();
 
-    return () => unsubcribeFromMessages();
+    return () => unsubscribeFromMessages();
   }, [
     selectedUser._id,
     getMessages,
     subscribeToMessages,
-    unsubcribeFromMessages,
+    unsubscribeFromMessages
   ]);
 
   // Hook
