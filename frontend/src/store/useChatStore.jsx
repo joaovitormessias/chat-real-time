@@ -20,7 +20,7 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get("/messages/users"); // Enviando uma requisição para o endpoint
       set({ users: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     } finally {
       set({ isUsersLoading: false });
     }
@@ -32,17 +32,18 @@ export const useChatStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`); // Enviando uma requisição para o endpoint
-      set({ messages: res.data });
+      if (get().selectedUser?._id === userId) set({ messages: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     } finally {
-      set({ isMessagesLoading: false });
+      if (get().selectedUser?._id === userId) set({ isMessagesLoading: false });
     }
   },
 
   // Função para enviar mensagens
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser } = get();
+    if (!selectedUser) return;
     try {
       // Requisição para API
       const res = await axiosInstance.post(
@@ -50,9 +51,12 @@ export const useChatStore = create((set, get) => ({
         messageData
       );
       // Atualizando estado da variável
-      set({ messages: [...messages, res.data] });
+      // A late HTTP response must not append to a different conversation.
+      if (get().selectedUser?._id === selectedUser._id) {
+        set({ messages: [...get().messages, res.data] });
+      }
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     }
   },
 
@@ -63,10 +67,11 @@ export const useChatStore = create((set, get) => ({
 
     const socket = useAuthStore.getState().socket;
 
+    if (!socket) return;
     socket.on("newMessage", (newMessage) => {
       // Erro: quando eu enviava mensagem através de outro usuário estava aparecendo a mensagem na conversa com outro usuário
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if(isMessageSentFromSelectedUser) return;
+      const isMessageSentFromSelectedUser = newMessage.senderId === get().selectedUser?._id;
+      if (!isMessageSentFromSelectedUser) return;
       set({
         messages: [...get().messages, newMessage],
       });
@@ -75,9 +80,9 @@ export const useChatStore = create((set, get) => ({
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket.off("newMessage");
+    socket?.off("newMessage");
   },
 
-  
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+
+  setSelectedUser: (selectedUser) => set({ selectedUser, messages: [], isMessagesLoading: false }),
 }));

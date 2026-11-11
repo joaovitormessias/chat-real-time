@@ -1,97 +1,75 @@
-CapiChat é um aplicativo de **bate-papo em tempo real** onde usuários podem trocar mensagens e enviar imagens. Criado como projeto de aprendizado, ele simula uma rede social simples com comunicação entre usuários e upload de fotos, utilizando **MERN stack (MongoDB, Express, React e Node.js)** e **Socket.IO**.
+# CapiChat
 
----
+**A browser chat prototype with private conversations, image messages, and online presence.**
 
-## 🚀 Objetivo
+This learning project combines a React interface with an Express/MongoDB API and Socket.IO. HTTP persists messages; realtime events deliver newly saved messages to connected recipients.
 
-Este projeto foi desenvolvido com fins educacionais, explorando conceitos como:
-- Comunicação em tempo real com WebSockets
-- Upload e exibição de imagens via Cloudinary
-- Autenticação com JWT e cookies
-- Boas práticas com REST APIs, Zustand e componentes reutilizáveis em React
+**React · Zustand · Express · MongoDB · Socket.IO · Cloudinary**
 
----
+## Product flow
 
-## 🛠️ Tecnologias utilizadas
+| Action | Implementation |
+| --- | --- |
+| Register / sign in | Password authentication and JWT in an HTTP-only cookie |
+| Select a conversation | Load messages between the signed-in user and selected recipient |
+| Send text or image | Save the message; upload images through Cloudinary |
+| Receive live messages | Authenticate the socket using the signed cookie and deliver to a user room |
+| Open multiple tabs | Each tab joins the same user room; presence tracks connection count |
 
-### 🔙 Backend
-- [Node.js](https://nodejs.org/)
-- [Express](https://expressjs.com/) (v5)
-- [MongoDB](https://www.mongodb.com/)
-- [Mongoose](https://mongoosejs.com/)
-- [Socket.IO](https://socket.io/)
-- [Cloudinary](https://cloudinary.com/)
-- [JWT](https://jwt.io/)
-- [Cookie-parser](https://www.npmjs.com/package/cookie-parser)
-- [dotenv](https://www.npmjs.com/package/dotenv)
-- [bcryptjs](https://www.npmjs.com/package/bcryptjs)
+## Architecture and review points
 
-### 🔜 Frontend
-- [React 19](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [Zustand](https://zustand-demo.pmnd.rs/)
-- [Socket.IO Client](https://socket.io/docs/v4/client-api/)
-- [React Router DOM](https://reactrouter.com/)
-- [React Hot Toast](https://react-hot-toast.com/)
-- [TailwindCSS](https://tailwindcss.com/)
-- [Lucide React](https://lucide.dev/)
-- [DaisyUI](https://daisyui.com/)
-
----
-
-## 📷 Funcionalidades
-
-- Login e cadastro de usuários com autenticação via JWT
-- Upload e atualização de foto de perfil
-- Envio de mensagens em tempo real
-- Upload de imagens via base64 com preview
-- Lista de usuários online com Socket.IO
-- Tela de perfil com edição de imagem
-
----
-
-## 🧩 Como rodar o projeto localmente
-
-### 📋 Pré-requisitos
-- Node.js 18+
-- MongoDB Atlas (ou local)
-- Conta no [Cloudinary](https://cloudinary.com/)
-- Vite (já incluso como dependência)
-
----
-
-### 🔧 Instalação
-
-1. Clone o repositório:
-
-```bash
-git clone https://github.com/seuusuario/capichat.git
-cd capichat 
-``` 
-
-2. Configure as variáveis de ambiente:
-- Crie um ```.env``` dentro de ```backend/``` com as variáveis:
-
-```bash
-PORTA=5001
-MONGODB_URI=seu_mongo_uri
-JWT_SECRET=seu_segredo
-CLOUDINARY_CLOUD_NAME=seu_cloud_name
-CLOUDINARY_API_KEY=sua_api_key
-CLOUDINARY_API_SECRET=sua_api_secret
+```mermaid
+flowchart TD
+    Browser["React + Zustand"] -->|HTTP / cookie| API["Express API"]
+    Browser <-->|Socket.IO| Sockets["Authenticated user rooms"]
+    API --> DB["MongoDB"]
+    API --> Images["Cloudinary"]
+    API --> Sockets
 ```
-3. Instale as dependências:
+
+- [Socket server](backend/src/lib/socket.js): derives identity from a verified cookie, not an untrusted userId query string.
+- [Message controller](backend/src/controllers/message.controller.js): persistence precedes event delivery.
+- [Chat store](frontend/src/store/useChatStore.jsx): accepts events only for the selected sender and appends against current state.
+- [Auth store](frontend/src/store/useAuthStore.jsx): restores the socket after refreshing a signed-in page.
+
+## Run locally
+
+Use Node.js/npm, MongoDB, and a Cloudinary account for image features.
+
 ```bash
-cd frontend && npm install
-cd ../backend && npm install
+git clone https://github.com/joaovitormessias/chat-real-time.git
+cd chat-real-time
+npm ci --prefix backend
+npm ci --prefix frontend
+cp backend/.env.example backend/.env
 ```
-4. Rode o frontend e o backend:
+
+Edit `backend/.env` with your MongoDB URL, a random JWT secret, and Cloudinary configuration. Keep `NODE_ENV=development` for local HTTP cookies. Run each command from the repository root in a separate terminal:
+
 ```bash
-# Em dois terminais separados:
-npm run dev --prefix frontend
 npm run dev --prefix backend
+npm run dev --prefix frontend
 ```
-- Acesse: ```http://localhost:5173```
 
-### 👨‍💻 Autores
-- @joaovitormessias — Desenvolvimento, documentação e design
+Open http://localhost:5173; the API defaults in the example to port 5001. Do not commit `.env`.
+
+## Verify
+
+After installing both dependency sets:
+
+```bash
+node --test backend/tests/socket.test.js
+node --experimental-vm-modules --test frontend/tests/chat-store.test.cjs
+npm run build --prefix frontend
+npm run lint --prefix frontend
+```
+
+Socket tests use a mocked user lookup and real local socket connections: a forged query identity is rejected and authenticated multiple tabs receive delivery. They do not exercise MongoDB or Cloudinary. Three store tests exercise sender filtering, pending-send preservation and stale responses after changing conversations. They load the real store module with mocked HTTP/socket dependencies and Zustand. The frontend build verifies bundling, not a complete browser journey. The frontend build and lint pass in the review environment.
+
+For manual evaluation, use two synthetic accounts in separate browser sessions: exchange text, upload an image, refresh, open another tab, and confirm messages stay in the correct conversation.
+
+## Current limits
+
+No message-delivery acknowledgement/replay protocol, pagination, upload quota, production session revocation, or multi-server socket adapter is implemented. Presence is process-local. Dependencies are older and need a separate compatibility/security update. A working local socket test does not establish production readiness.
+
+[Maintainer](https://github.com/joaovitormessias)

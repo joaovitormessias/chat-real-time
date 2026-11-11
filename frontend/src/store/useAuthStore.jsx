@@ -28,7 +28,7 @@ export const useAuthStore = create((set, get) => ({
 
       set({ authUser: res.data });
 
-      // Facila a depuração
+      get().connectSocket(); // Restore realtime delivery after a browser refresh.
     } catch (error) {
       console.log("Erro no checkAuth: ", error);
       set({ authUser: null });
@@ -49,7 +49,7 @@ export const useAuthStore = create((set, get) => ({
 
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     } finally {
       set({ isSigningUp: false });
     }
@@ -66,7 +66,7 @@ export const useAuthStore = create((set, get) => ({
 
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -79,7 +79,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Você saiu com êxito");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     }
   },
 
@@ -92,7 +92,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Ta de cara nova");
     } catch (error) {
       console.log("erro ao atualizar perfil:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Falha de conexão");
     } finally {
       set({ isUpdatingProfile: false });
     }
@@ -105,9 +105,7 @@ export const useAuthStore = create((set, get) => ({
     if (!authUser || get().socket?.connected) return;
     // Mapeando para exibir usuários online
     const socket = io(BASE_URL, {
-      query: {
-        userId: authUser._id,
-      },
+      withCredentials: true,
     });
     socket.connect();
 
