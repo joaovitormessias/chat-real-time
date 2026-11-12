@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
@@ -15,6 +16,7 @@ const MessageInput = () => {
   // Manipulando a imagem selecionada
   const handleImageChange = (e) => {
     const file = e.target.files[0];
+    if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Por favor selecione a imagem");
       return;

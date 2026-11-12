@@ -1,0 +1,30 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import jwt from 'jsonwebtoken';
+import { createRequire } from 'node:module';
+import User from '../src/models/user.model.js';
+import { io, server, getReceiverSocketId } from '../src/lib/socket.js';
+const require = createRequire(new URL('../../frontend/package.json', import.meta.url));
+const { io: client } = require('socket.io-client');
+process.env.JWT_SECRET = 'local-regression-only-secret';
+User.findById = id => ({select: async () => id === 'valid-user' ? {_id: id} : null});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const url = `http://127.0.0.1:${server.address().port}`;
+after(() => new Promise(resolve => io.close(resolve)));
+const connect = options => client(url, {reconnection: false, timeout: 1000, ...options});
+const once = (socket, event) => new Promise(resolve => socket.once(event, resolve));
+test('query identity without signed cookie is rejected', async () => {
+  const socket = connect({query: {userId: 'victim'}});
+  const error = await once(socket, 'connect_error');
+  assert.equal(error.message, 'Unauthorized'); socket.disconnect();
+});
+test('signed identity joins its own room and supports multiple tabs', async () => {
+  const token = jwt.sign({userId: 'valid-user'}, process.env.JWT_SECRET);
+  const options = {query: {userId: 'victim'}, extraHeaders: {Cookie: `jwt=${token}`}};
+  const a = connect(options), b = connect(options);
+  await Promise.all([once(a, 'connect'), once(b, 'connect')]);
+  const deliveries = Promise.all([once(a, 'newMessage'), once(b, 'newMessage')]);
+  io.to(getReceiverSocketId('valid-user')).emit('newMessage', {text: 'hello'});
+  assert.deepEqual(await deliveries, [{text: 'hello'}, {text: 'hello'}]);
+  a.disconnect(); b.disconnect();
+});
